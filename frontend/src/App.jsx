@@ -1,122 +1,116 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { Routes, Route } from "react-router-dom";
+import WatchPage from "./components/WatchPage";
+import MovieDetails from "./components/MovieDetails";
+import { useMemo, useState } from "react";
+import { movies } from "./data/movies";
+import Navbar from "./components/Navbar";
+import Hero from "./components/Hero";
+import MovieRow from "./components/MovieRow";
+import { Film, Plus, Check } from "lucide-react";
 
-function App() {
-  const [count, setCount] = useState(0)
+function HomePage() {
+  const [search, setSearch] = useState("");
+  const [watchlist, setWatchlist] = useState([]);
+
+  const filteredMovies = useMemo(() => {
+    return movies.filter((movie) =>
+      movie.title.toLowerCase().includes(search.toLowerCase()) ||
+      movie.genre.toLowerCase().includes(search.toLowerCase())
+    );
+  }, [search]);
+
+  const toggleWatchlist = (movie) => {
+    setWatchlist((current) =>
+      current.some((item) => item.id === movie.id)
+        ? current.filter((item) => item.id !== movie.id)
+        : [...current, movie]
+    );
+  };
+
+  const trending = filteredMovies.filter(
+    (movie) => movie.category === "Trending"
+  );
+
+  const popular = filteredMovies.filter(
+    (movie) => movie.category === "Popular"
+  );
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
+    <div className="app">
+      <Navbar search={search} setSearch={setSearch} />
+
+      <Hero />
+
+      <main className="catalogue" id="catalogue">
+        {search ? (
+          <MovieRow
+            title={`Search results for "${search}"`}
+            movies={filteredMovies}
+            onWatchlist={toggleWatchlist}
+          />
+        ) : (
+          <>
+            <MovieRow
+              title="Trending Now"
+              movies={trending}
+              id="trending"
+              onWatchlist={toggleWatchlist}
+            />
+
+            <MovieRow
+              title="Popular on CineStream"
+              movies={popular}
+              id="popular"
+              onWatchlist={toggleWatchlist}
+            />
+
+            <MovieRow
+              title="Discover More"
+              movies={filteredMovies}
+              onWatchlist={toggleWatchlist}
+            />
+          </>
+        )}
+
+        {filteredMovies.length === 0 && (
+          <p className="empty-state">
+            No movies found. Try another search.
           </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+        )}
 
-      <div className="ticks"></div>
+        {watchlist.length > 0 && (
+          <MovieRow
+            title="My Watchlist"
+            movies={watchlist}
+            onWatchlist={toggleWatchlist}
+          />
+        )}
+      </main>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <footer className="footer">
+        <div className="footer-brand">
+          <Film size={22} />
+          CINESTREAM
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        <p>
+          Your next cinematic experience starts here.
+        </p>
+
+        <span>© 2026 CineStream. Demo project.</span>
+      </footer>
+    </div>
+  );
 }
 
-export default App
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/watch/:id" element={<WatchPage />} />
+      <Route path="/movie/:id" element={<MovieDetails />} />
+    </Routes>
+  );
+}
+
+export default App;
