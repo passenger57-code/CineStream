@@ -1,23 +1,47 @@
 import { Routes, Route } from "react-router-dom";
 import WatchPage from "./components/WatchPage";
 import MovieDetails from "./components/MovieDetails";
-import { useMemo, useState } from "react";
-import { movies } from "./data/movies";
+import { useEffect, useMemo, useState } from "react";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
 import MovieRow from "./components/MovieRow";
-import { Film, Plus, Check } from "lucide-react";
+import { getMovies } from "./services/movieService";
+import { Film } from "lucide-react";
 
 function HomePage() {
   const [search, setSearch] = useState("");
   const [watchlist, setWatchlist] = useState([]);
+  const [movies, setMovies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchMovies = async () => {
+        try {
+            setLoading(true);
+
+            const data = await getMovies();
+
+            setMovies(data);
+            setError(null);
+        } catch (err) {
+            console.error("Failed to fetch movies:", err);
+
+            setError("Unable to load movies. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    fetchMovies();
+}, []);
 
   const filteredMovies = useMemo(() => {
     return movies.filter((movie) =>
       movie.title.toLowerCase().includes(search.toLowerCase()) ||
       movie.genre.toLowerCase().includes(search.toLowerCase())
     );
-  }, [search]);
+  }, [movies, search]);
 
   const toggleWatchlist = (movie) => {
     setWatchlist((current) =>
@@ -42,40 +66,50 @@ function HomePage() {
       <Hero />
 
       <main className="catalogue" id="catalogue">
-        {search ? (
-          <MovieRow
-            title={`Search results for "${search}"`}
-            movies={filteredMovies}
-            onWatchlist={toggleWatchlist}
-          />
+        {loading ? (
+          <p className="empty-state">Loading movies...</p>
+        ) : error ? (
+          <p className="empty-state" role="alert">{error}</p>
+        ) : movies.length === 0 ? (
+          <p className="empty-state">No movies available yet.</p>
         ) : (
           <>
-            <MovieRow
-              title="Trending Now"
-              movies={trending}
-              id="trending"
-              onWatchlist={toggleWatchlist}
-            />
+            {search ? (
+              <MovieRow
+                title={`Search results for "${search}"`}
+                movies={filteredMovies}
+                onWatchlist={toggleWatchlist}
+              />
+            ) : (
+              <>
+                <MovieRow
+                  title="Trending Now"
+                  movies={trending}
+                  id="trending"
+                  onWatchlist={toggleWatchlist}
+                />
 
-            <MovieRow
-              title="Popular on CineStream"
-              movies={popular}
-              id="popular"
-              onWatchlist={toggleWatchlist}
-            />
+                <MovieRow
+                  title="Popular on CineStream"
+                  movies={popular}
+                  id="popular"
+                  onWatchlist={toggleWatchlist}
+                />
 
-            <MovieRow
-              title="Discover More"
-              movies={filteredMovies}
-              onWatchlist={toggleWatchlist}
-            />
+                <MovieRow
+                  title="Discover More"
+                  movies={filteredMovies}
+                  onWatchlist={toggleWatchlist}
+                />
+              </>
+            )}
+
+            {search && filteredMovies.length === 0 && (
+              <p className="empty-state">
+                No movies found. Try another search.
+              </p>
+            )}
           </>
-        )}
-
-        {filteredMovies.length === 0 && (
-          <p className="empty-state">
-            No movies found. Try another search.
-          </p>
         )}
 
         {watchlist.length > 0 && (
